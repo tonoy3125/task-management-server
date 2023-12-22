@@ -9,7 +9,7 @@ app.use(express.json())
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.3il8g6r.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -29,9 +29,68 @@ async function run() {
 
 
 
+        app.get('/tasks/item/:id', async (request, response) => {
+            const id = request.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await taskCollection.findOne(query);
+            response.status(200).send(result);
+          });
+      
+          app.get('/ongoing', async (request, response) => {
+            const result = await taskCollection.find({ status: 'ongoing' }).toArray();
+            response.status(200).send(result);
+          });
+      
+          app.get('/created', async (request, response) => {
+            const result = await taskCollection.find({ status: 'created' }).toArray();
+            response.status(200).send(result);
+          });
+      
+          app.get('/completed', async (request, response) => {
+            const result = await taskCollection
+              .find({ status: 'completed' })
+              .toArray();
+            response.status(200).send(result);
+          });
+
+
+
         app.post('/tasks', async (req, res) => {
             const task = req.body;
             const result = await taskCollection.insertOne(task);
+            res.send(result);
+        });
+
+
+        app.get('/tasks/:loggedInUserEmail', async (req, res) => {
+            const loggedInUserEmail = req.params.loggedInUserEmail;
+            const query = { loggedInUserEmail: loggedInUserEmail }
+            const result = await taskCollection.find(query).toArray()
+            res.send(result)
+        })
+
+
+            // * !patch method
+                // * /
+
+        app.patch('/tasks/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const updatedDoc = {
+                $set: { status: req.body.status },
+            };
+            const result = await taskCollection.updateOne(query, updatedDoc);
+            res.send(result);
+        });
+
+        /**
+         * ! delete method
+         */
+
+        app.delete('/tasks/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await taskCollection.deleteOne(query);
             res.send(result);
         });
 
